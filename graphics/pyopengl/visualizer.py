@@ -41,13 +41,16 @@ class Robot():
     ''' '''
     def __init__(self):
         self.cube_positions = [(0,0,0), (1,0,0), (0,0,1), (0,1,0), (3,2,0)]
+        # samp = range(-6,6,2)
+        # sampp = range(0,12,2)
+        # self.cube_positions = [(i,j,k) for i in samp for j in sampp for k in samp]
         eps = 0.001
         self.color_pallete = [[i,j,k,1.0]
                 for i in [0.0,1.0]
                 for j in [0.0,1.0]
                 for k in [0.0,1.0]
                 if i*j>eps or j*k>eps or k*i>eps]
-        pprint(self.color_pallete)
+        # pprint(self.color_pallete)
     def __repr__(self):
         return ''
 
@@ -66,6 +69,7 @@ def initCumm():
     global T_cumm
     glLoadIdentity()
     # Rotate us into a nice view.
+    glRotate(25, 1, 0, 0)
     glRotate(-45, 0, 1, 0)
     R_cumm = glGetFloatv(GL_MODELVIEW_MATRIX)
     glLoadIdentity()
@@ -84,8 +88,13 @@ def keyfunc(key, x, y):
     # elif key == 'm' or key == 'M':
         # drawing_mode += 1
         # drawing_mode %= 3
-    elif key == 'r' or key == 'R':
-        spin = not spin
+    # elif key == 'r' or key == 'R':
+        # spin = not spin
+    # Advance demo
+    # else:
+        # TODO:
+        # advance_demo(...)
+        # set_cube_positions(...)
 
 
 def mousefunc(button, state, x, y):
@@ -236,11 +245,11 @@ def draw_axes():
     y = [O, (0,l,0)]
     z = [O, (0,0,l)]
     axes = x+y+z
-    r = (1,0,0)
-    g = (0,1,0)
-    b = (0,0,1)
+    # r = (1,0,0)
+    # g = (0,1,0)
+    # b = (0,0,1)
     o = (0,0,0)
-    w = (1,1,1)
+    w = (.8,.8,1)
     rgb = [w,o,w,o,w,o]
 
     glDisable(GL_LIGHTING)
@@ -249,6 +258,34 @@ def draw_axes():
     glVertexPointer(3, GL_FLOAT, 0, axes)
     glColorPointer(3, GL_FLOAT, 0, rgb)
     glDrawArrays(GL_LINES, 0, len(axes))
+    glDisableClientState(GL_VERTEX_ARRAY)
+    glDisableClientState(GL_COLOR_ARRAY)
+    glEnable(GL_LIGHTING)
+
+
+def draw_grid():
+    n = 8
+    l = n/2
+    x0 = .5
+    y0 = x0
+    z0 = -.5
+
+    line_vertices = []
+    for i in range(l+1):
+        line_vertices += [(x0+i,z0,y0-l),(x0+i,z0,y0+l)]
+        line_vertices += [(x0-i,z0,y0-l),(x0-i,z0,y0+l)]
+        line_vertices += [(x0-l,z0,y0+i),(x0+l,z0,y0+i)]
+        line_vertices += [(x0-l,z0,y0-i),(x0+l,z0,y0-i)]
+
+    w = (.3,.3,.3)
+    w_array = [w]*len(line_vertices)
+
+    glDisable(GL_LIGHTING)
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glEnableClientState(GL_COLOR_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, line_vertices)
+    glColorPointer(3, GL_FLOAT, 0, w_array)
+    glDrawArrays(GL_LINES, 0, len(line_vertices))
     glDisableClientState(GL_VERTEX_ARRAY)
     glDisableClientState(GL_COLOR_ARRAY)
     glEnable(GL_LIGHTING)
@@ -283,7 +320,8 @@ def redraw():
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     set_view()
-    draw_axes()
+    # draw_axes()
+    draw_grid()
 
     robot.step()
     robot.draw()
@@ -351,7 +389,7 @@ def initGLUT():
     glutInit()
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutInitWindowSize(400, 400)
-    glutInitWindowPosition(1800, 200)
+    glutInitWindowPosition(200, 200)
     glutCreateWindow("MBlock Visualizer v0")
 
 
