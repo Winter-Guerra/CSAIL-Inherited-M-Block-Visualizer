@@ -51,8 +51,8 @@ def init_configuration():
     config = set([(0,0),(0,1),(1,0),(2,0),(3,0),(3,1),(3,2),(3,3),(4,3),
         (0,2),(0,3),(0,4),(0,5),(0,6),(1,3),(1,4),(2,3),(2,4),(-1,0),(-2,0),
         (-3,0),(-3,1),(-3,2),(-3,3),(-2,3),(-1,3),
-        (0,7),(0,8),(1,8),(2,8),(3,8),(2,-1),(2,-2),(2,-3),(2,-4),(2,-5),
-        (3,-4),(4,-4),(5,-4)])
+        (0,7),(0,8),(1,8),(2,8),(3,8)])#,(2,-1),(2,-2),(2,-3),(2,-4),(2,-5),
+        #(3,-4),(4,-4),(5,-4)])
     config_size = len(config)
 
 
@@ -61,8 +61,11 @@ def init_configuration():
 
 
 def rotate_clockwise(cube):
+    # NOTE: Does not affect config
     global config
-    # FORNOW: Does not affect config
+
+    # TODO: Build transfers into the model
+    # TODO: Build checks into the model
 
     (x, y) = cube
     clockwise_2box_coords = [((x+1,y),(x,y+1),(x+1,y+1)),
@@ -209,21 +212,70 @@ def step_configuration():
     global rotating_cube
 
     if rotating_cube == None:
+        # Grab next cube_n
         # Pythonic for "if len(N_set) != 0"
         if N_set:
             rotating_cube = N_set.pop()
+            # unnecessary, but clarifies intent
+            N_set.add(rotating_cube)
+        # Search for P for a 3 Cube Escape
         else:
-            print "TODO: implement Three Cube Escape"
-            exit(1)
+            # axes
+            P_major = None # the three cubes lie along this axis
+            P_minor = None # connects filled cubes to empty outer free space
+            for cube_m in M_set:
+                x, y = cube_m
+                U = (0,1); D = (0,-1); R = (1,0); L = (-1,0)
+                LR = (L,R); UD = (U,D);
+                search_dict = {U:LR, D:LR, R:UD, L:UD}
+                for (major, minors) in search_dict.iteritems():
+                    for minor in minors:
+                        P_found = True
+                        for i in xrange(3):
+                            full = (x + i*major[0], y + i*major[1])
+                            empty = (full[0] + minor[0], full[1] + minor[1])
+                            if full not in config or empty in config:
+                                P_found = False
+                        if P_found:
+                            (P_major, P_minor) = (major, minor)
+                            rotating_cube = [cube_m,
+                                    (cube_m[0] + major[0], cube_m[1] + major[1]),
+                                    (cube_m[0] + 2*major[0], cube_m[1] + 2*major[1])]
+
+
     else:
-        print ".",
-        if not (rotating_cube[1] == extreme[1] and rotating_cube[0] > extreme[0]):
-            config.remove(rotating_cube)
-            rotating_cube = rotate_clockwise(rotating_cube)
-            config.add(rotating_cube)
+        # Standard tail relocation
+        if type(rotating_cube[0]) is int:
+            # If not part of tail...
+            if not (rotating_cube[1] == extreme[1] and rotating_cube[0] > extreme[0]):
+                config.remove(rotating_cube)
+                rotating_cube = rotate_clockwise(rotating_cube)
+                config.add(rotating_cube)
+            else:
+                T_set.add(rotating_cube)
+                rotating_cube = None
+        # 3 Cube Escape
         else:
-            T_set.add(rotating_cube)
-            rotating_cube = None
+            assert type(rotating_cube[0]) is tuple
+            moved_cube = False
+            for i in range(3):
+                cube_3ce = rotating_cube[i]
+                if cube_3ce[1] == extreme[1] and cube_3ce[0] > extreme[0]:
+                    # sloppy, but whatever
+                    T_set.add(cube_3ce)
+                    continue
+                else:
+                    moved_cube = True
+                    config.remove(cube_3ce)
+                    cube_3ce = rotate_clockwise(cube_3ce)
+                    config.add(cube_3ce)
+                    # be sure to update rotating_cube
+                    rotating_cube[i] = cube_3ce
+                    break
+            # If all three cubes part of tail...
+            if not moved_cube:
+                rotating_cube = None
+
 
 
 def draw_configuration():
@@ -269,7 +321,7 @@ def main():
     update_configuration()
 
     while True:
-        clock.tick(15)
+        clock.tick(5)
         # key handling
         for event in pygame.event.get():
             if (event.type == QUIT or
