@@ -1,6 +1,6 @@
 # Draw your own configuration to reconfigure
 # Originally: James Bern 7/15
-# Adapted from The Falling Rooms leveleditor.py James Bern
+# Adapted from The Falling Rooms leveleditor.py by James Bern
 
 # TODO: Verificiation
 
@@ -17,9 +17,10 @@ import pickle
 
 WHITE = pygame.Color("white")
 DARK_GREY = pygame.Color(20, 20, 20)
+WHITE, DARK_GREY = DARK_GREY, WHITE
 
-# n = num block lengths per square side
-n = 50
+# n = num block lengths on one side of canvas
+n = 64
 
 # NOTE these variables only impact what the level editor looks like.
 # b = block length in pixels
