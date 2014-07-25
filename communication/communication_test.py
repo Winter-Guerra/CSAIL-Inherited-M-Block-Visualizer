@@ -4,10 +4,20 @@
 # Uses prSerial
 # https://pypi.python.org/pypi/pyserial
 
+
 import serial
 import time
 
+
+PORT_NAME = 'COM5'
+BAUD_RATE = 115200
+TIMEOUT = 1 # FORNOW: number of seconds to wait on output
+
+
 def output_to_terminal(serial_port):
+    '''
+    Output everying in the receive buffer to terminal.
+    '''
     # FORNOW: wait a second for command to go through
     time.sleep(1)
     output = ''
@@ -15,22 +25,40 @@ def output_to_terminal(serial_port):
         output += serial_port.read(1)
     print(output)
 
-def execute_command(serial_port, string):
-    serial_port.write(string + '\r')
+
+def execute_command(serial_port, string_rep):
+    '''
+    Send a command to the specified serial_port.
+    example: execute_command(ser, "atd")
+    '''
+    serial_port.write(string_rep + '\r')
     output_to_terminal(serial_port)
 
-def main():
-    ser = serial.Serial('COM5', 115200, timeout=1)
-    print("\nCommunicating on {}\n".format(ser.portstr))
 
+def main():
+    # Open up the serial port
+    try:
+        ser = serial.Serial(PORT_NAME, BAUD_RATE, timeout=TIMEOUT)
+    except serial.serialutil.SerialException:
+        print("\nYou probably specified the wrong port.\n" +
+                "Try something like 'COM5'.\nTerminating.\n")
+        exit(1)
+    print("\nOpened port with name {}\n".format(ser.portstr))
+
+    # Connect to M-Block
     execute_command(ser, "atd")
+
+    # Test sequence: charge info, brake, brake, brake
     execute_command(ser, "charge info")
     for _ in xrange(3):
         execute_command(ser, "brake f 4000 250")
+
+    # Disconnect from M-Block
     execute_command(ser, "blediscon")
 
+    # Close serial port
     ser.close()
 
-if __name__ == '__main__':
-    main()
+
+if __name__ == '__main__': main()
 
