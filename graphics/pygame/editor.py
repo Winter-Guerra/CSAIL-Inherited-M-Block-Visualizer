@@ -79,7 +79,7 @@ def main():
         assert len(sys.argv) == 2
         arg = sys.argv[1]
         try:
-            g = open(arg + ".config", 'r')
+            g = open(arg, 'r')
             paint_squares = pickle.load(g)
             config = Config()
             for tup in paint_squares:
@@ -132,7 +132,7 @@ def main():
 
     # ELSE save...
     name = raw_input("Input config file name. >> ")
-    f = open("{}.config".format(name), 'w')
+    f = open("{}".format(name), 'w')
     pickle.dump(set([(tup[0],tup[1]) for tup in config.plan if config.plan[tup]]), f)
     f.close()
     return

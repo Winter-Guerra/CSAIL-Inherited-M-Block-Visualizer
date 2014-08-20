@@ -17,10 +17,11 @@ TIMEOUT = 1 # FORNOW: number of seconds to wait on output
 def output_to_terminal(serial_port):
     '''
     Output everying in the receive buffer to terminal.
+    Should wait for the conclusion of the action.
     '''
-    # FORNOW: wait a second for command to go through
-    time.sleep(1)
     output = ''
+    # # FORNOW: wait a few seconds for command to go through
+    time.sleep(4)
     while serial_port.inWaiting() > 0:
         output += serial_port.read(1)
     print(output)
@@ -48,10 +49,15 @@ def main():
     # Connect to M-Block
     execute_command(ser, "atd")
 
-    # Test sequence: charge info, brake, brake, brake
+    # Test sequence
     execute_command(ser, "charge info")
-    for _ in xrange(3):
-        execute_command(ser, "brake f 4000 250")
+
+    # for _ in xrange(3):
+        # execute_command(ser, "brake f 4000 250")
+    # execute_command(ser, "ia f 4000 4000 250")
+    # execute_command(ser, "ia r 4000 4000 250")
+    # execute_command(ser, "ia r 4000 4000 250")
+    # execute_command(ser, "ia f 4000 4000 250")
 
     # Disconnect from M-Block
     execute_command(ser, "blediscon")

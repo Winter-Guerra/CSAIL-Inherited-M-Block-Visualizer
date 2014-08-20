@@ -22,7 +22,7 @@ T_set = set()
 rotating_cubes = []
 
 # flags
-light_variant = False
+light_variant = True
 dump_png = False
 
 def init_pygame():
@@ -39,9 +39,9 @@ def init_pygame():
 
 def find_extreme():
     global config
-    My = max([c[1] for c in config])
-    mx = max([c[0] for c in config if c[1] == My])
-    return (mx, My)
+    Mx = max([c[0] for c in config])
+    My = max([c[1] for c in config if c[0] == Mx])
+    return (Mx, My)
 
 
 def verify_configuration():
@@ -102,7 +102,8 @@ def init_configuration(init_config=None, random=False):
         pass
 
     else:
-        config = set([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (0, 10), (0, 11), (0, 12), (1, 0), (1, 3), (1, 6), (1, 9), (1, 12), (2, 0), (2, 3), (2, 6), (2, 9), (2, 12), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (4, 0), (4, 3), (4, 6), (4, 9), (4, 12), (5, 0), (5, 3), (5, 6), (5, 9), (5, 12), (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6), (6, 7), (6, 8), (6, 9), (6, 10), (6, 11), (6, 12), (7, 0), (7, 3), (7, 6), (7, 9), (7, 12), (8, 0), (8, 3), (8, 6), (8, 9), (8, 12), (9, 0), (9, 1), (9, 2), (9, 3), (9, 4), (9, 5), (9, 6), (9, 7), (9, 8), (9, 9), (9, 10), (9, 11), (9, 12), (10, 0), (10, 3), (10, 6), (10, 9), (10, 12), (11, 0), (11, 3), (11, 6), (11, 9), (11, 12), (12, 0), (12, 1), (12, 2), (12, 3), (12, 4), (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (12, 10), (12, 11), (12, 12)])
+        config = set([(-4, -3), (-4, 0), (-4, 1), (-3, -4), (-3, -3), (-3, -2), (-3, -1), (-3, 0), (-3, 1), (-3, 2), (-2, -5), (-2, -4), (-2, -3), (-2, -2), (-2, -1), (-2, 0), (-2, 1), (-2, 2), (-2, 3), (-1, -6), (-1, -5), (-1, -4), (-1, -3), (-1, -2), (-1, -1), (-1, 0), (-1, 1), (-1, 2), (-1, 3), (-1, 4), (0, -5), (0, -4), (0, -3), (0, -2), (0, -1), (0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, -4), (1, -3), (1, -2), (1, -1), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (2, -3), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, -2), (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (5, -1)])
+
     # always need to run these
     config_size = len(config)
     extreme = find_extreme() # FORNOW: UR extreme
@@ -374,8 +375,8 @@ def step_configuration():
 
 
 def draw_cube(cube, color):
-    c = 2*2
-    N = 1
+    c = 2*2*2
+    N = 5
     (x, y) = (cube[0]+N, cube[1]+N)
     pygame.draw.rect(screen, color, [x*c, screen.get_size()[1]-c-y*c, c, c])
 
@@ -457,7 +458,7 @@ def main():
     pygame.time.wait(1000)
 
     # visualization options
-    draw_moves = False
+    draw_moves = True
     draw_rotations = True
 
     frame_i = 0
@@ -483,7 +484,7 @@ def main():
         else:
             if draw_rotations:
                 draw_configuration(frozen=True)
-                # pygame.time.wait(10)
+                # pygame.time.wait(100)
         if dump_png:
             pad = '0'*(4-len(str(frame_i)))
             pygame.image.save(pygame.display.get_surface(), 'frame' + pad + str(frame_i) + '.png')

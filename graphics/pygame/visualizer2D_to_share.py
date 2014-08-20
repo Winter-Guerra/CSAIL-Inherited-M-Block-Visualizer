@@ -1,8 +1,12 @@
-# random testing of visualizer2D.py
-# Originally: James Bern 7/25
+# To: sini.cyberweb@gmail.com
+# 2D pygame visualization of 2D reconfiguration algorithm
+# for squares.
+# Originally: James Bern 7/15 (jbern@caltech.edu)
 
+import pygame
+from pygame.locals import *
 from pprint import pprint
-import random
+import os # en
 
 # globals
 screen = None
@@ -16,26 +20,38 @@ N_set = set()
 T_set = set()
 rotating_cubes = []
 
+# flags
+light_variant = True
+dump_png = False
+
+def init_pygame():
+    global screen
+    global clock
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "{},{}".format(25,25)
+    pygame.init()
+    pygame.display.set_caption("visualizer2D.py")
+    # screen = pygame.display.set_mode([135*2,25*2])
+    screen = pygame.display.set_mode([400,200])
+    clock = pygame.time.Clock()
+
+
+def find_extreme():
+    global config
+    Mx = max([c[0] for c in config])
+    My = max([c[1] for c in config if c[0] == Mx])
+    return (Mx, My)
+
 
 def verify_configuration():
     global config
-    global config_size
-
-    if len(config) == 0:
-        print "Config is empty."
-        return False
 
     # connectivity condition
-    connected = True
     for c1 in config: break
     comp_c1 = find_component(c1)
     for c2 in config:
-        if c2 not in comp_c1:
-            connected = False
-            break
+        assert c2 in comp_c1
 
     # (1), (2), (3)
-    rule_following = True
     for c0 in config:
         x, y = c0
         U = (0,1); D = (0,-1); R = (1,0); L = (-1,0);
@@ -53,87 +69,27 @@ def verify_configuration():
                     c4 = (x+M[0]+m[0],y+M[1]+m[1])
                     c5 = (x+m[0],y+m[1])
                     # (1)
-                    if (c1 not in config and c2 in config):
-                        rule_following = False
-                        break
+                    assert not (c1 not in config and c2 in config)
                     # (2)
-                    if (c1 not in config and c4 in config and
-                            c5 not in config):
-                        rule_following = False
-                        break
+                    assert (not (c1 not in config and c4 in config and
+                        c5 not in config))
                     # (3)
-                    if (c1 not in config and c2 not in config and
-                            c3 in config and c4 not in config and
-                            c5 not in config):
-                        rule_following = False
-                        break
+                    assert (not (c1 not in config and c2 not in config
+                        and c3 in config and c4 not in config and
+                        c5 not in config))
+
+    print("\nConfig verified!\n")
 
 
-    if not connected:
-        # pprint(config)
-        print("Config is not connected.")
-        return False
-    if not rule_following:
-        # pprint(config)
-        print("Config does not follow RULES.")
-        return False
 
-    # pprint(config)
-    print "Config verified!",
-    return True
-
-
-def find_extreme():
-    global config
-    Mx = max([c[0] for c in config])
-    My = max([c[1] for c in config if c[0] == Mx])
-    return (Mx, My)
-
-
-def init_configuration():
+def init_configuration(init_config=None, random=False):
     global config
     global config_size
     global extreme
 
-    global O_set
-    global M_set
-    global N_set
-    global T_set
-    global rotating_cubes
-
-    config = set()
-    config_size = -1
-    extreme = None
-    O_set = set()
-    M_set = set()
-    N_set = set()
-    # missing this line
-    T_set = set()
-    # maybe also this one
-    rotating_cubes = []
-
-    config = set()
-    # Breadth-first random contstruction
-    while not verify_configuration():
-        config = set([(0,0)])
-        prev_cubes = set([(0,0)])
-        sample_lst = None
-        next_cubes = set()
-        for _i in xrange(7):
-            for cube in prev_cubes:
-                sample_lst = [(cube[0]+1,cube[1]),
-                              (cube[0],cube[1]+1),
-                              (cube[0]-1,cube[1]),
-                              (cube[0],cube[1]-1)]
-                for _j in xrange(random.choice(range(5))):
-                    pick = random.choice(sample_lst)
-                    next_cubes.add(pick)
-                    sample_lst.remove(pick)
-                config.update(next_cubes)
-                prev_cubes = next_cubes.copy()
-
+    config = set([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9), (0, 10), (0, 11), (0, 12), (1, 0), (1, 3), (1, 6), (1, 9), (1, 12), (2, 0), (2, 3), (2, 6), (2, 9), (2, 12), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (4, 0), (4, 3), (4, 6), (4, 9), (4, 12), (5, 0), (5, 3), (5, 6), (5, 9), (5, 12), (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6), (6, 7), (6, 8), (6, 9), (6, 10), (6, 11), (6, 12), (7, 0), (7, 3), (7, 6), (7, 9), (7, 12), (8, 0), (8, 3), (8, 6), (8, 9), (8, 12), (9, 0), (9, 1), (9, 2), (9, 3), (9, 4), (9, 5), (9, 6), (9, 7), (9, 8), (9, 9), (9, 10), (9, 11), (9, 12), (10, 0), (10, 3), (10, 6), (10, 9), (10, 12), (11, 0), (11, 3), (11, 6), (11, 9), (11, 12), (12, 0), (12, 1), (12, 2), (12, 3), (12, 4), (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (12, 10), (12, 11), (12, 12)])
+    # always need to run these
     config_size = len(config)
-    print config_size
     extreme = find_extreme() # FORNOW: UR extreme
 
 
@@ -142,7 +98,6 @@ def rotate_clockwise(cube, virtual=False):
     # NOTE: Does not affect config
     # NOTE: virtual=True turns off the assert statements
     global config
-
 
     (x, y) = cube
     c1_c3_wrapped_coords = [((+1,0),(0,+1)),
@@ -196,7 +151,7 @@ def rotate_clockwise(cube, virtual=False):
                         c6 not in config and c7 not in config)
             return c2
 
-    raise AssertionError
+    raise IOError
 
 
 def find_neighbors(cube):
@@ -226,7 +181,7 @@ def find_component(cube_a):
     return marked_cubes
 
 
-def path_search(cube_a, cube_b):
+def exists_path(cube_a, cube_b):
     '''
     return True iff there exists a path between cube_a
     and cube_b in configuration
@@ -288,7 +243,7 @@ def update_configuration():
             cube_b = cube_neighbors.pop()
             # restore cube_neighbors to keep things clean
             cube_neighbors = find_neighbors(cube)
-            connectivity_condition = path_search(cube_a, cube_b)
+            connectivity_condition = exists_path(cube_a, cube_b)
             config.add(cube)
 
         if neighbors_condition and connectivity_condition:
@@ -364,7 +319,7 @@ def step_configuration():
                         pprint(config)
                         exit(1)
                 print "\nI think we are done.\n"
-                return "DONE"
+                exit(0)
 
     else:
         # Standard tail relocation
@@ -403,25 +358,102 @@ def step_configuration():
                 rotating_cubes = []
 
 
-def run_test_case():
-    global rotating_cubes
+def draw_cube(cube, color):
+    # num pixels per cube on screen
+    c = 8
+    # offset from corner in cubes
+    N = 1
+    (x, y) = (cube[0]+N, cube[1]+N)
+    pygame.draw.rect(screen, color, [x*c, screen.get_size()[1]-c-y*c, c, c])
+
+
+def draw_configuration(frozen=False):
     global config
+    global screen
+    global extreme
+    global O_set, M_set, N_set, T_set
+    global rotating_cubes
+    global light_variant
 
-    init_configuration()
-    # assert verify_configuration()
-    update_configuration()
+    f = 1
+    if light_variant:
+        f = 2
 
-    try:
-        while step_configuration() != "DONE":
-            if not rotating_cubes:
-                update_configuration()
-    except AssertionError:
-        print "Oh dear!"
-        pprint(config)
+    DEFAULT = (153,102,204)
+    BOUNDARY = (0,191,255)
+    EXTREME = (255/f,159/f,0/f)
+    MOBILE = (133,187,101)
+    MOBILE_NON_SPLITTING = (0,255,0)
+    ROTATING = (255/f,85/f,163/f)
+    FROZEN = (100/f,100/f,100/f)
+    WHITE = (255,255,255)
+    BLACK = (0,0,0)
+
+    if light_variant:
+        screen.fill(WHITE)
+    else:
+        screen.fill(BLACK)
+
+    # NOTE: precendence order
+    for cube in config:
+        color = DEFAULT
+
+        if cube in N_set:
+            color = MOBILE_NON_SPLITTING
+        elif cube in M_set:
+            color = MOBILE
+        elif cube in O_set:
+            color = BOUNDARY
+
+        if cube in rotating_cubes:
+            color = ROTATING
+        elif cube in T_set or cube == extreme:
+            color = EXTREME
+        elif frozen:
+            color = FROZEN
+
+        draw_cube(cube, color)
+
+    pygame.display.flip()
+
 
 def main():
-    for _i in xrange(1000):
-        run_test_case()
+    global rotating_cubes
+    global dump_png
+
+    init_pygame()
+    # initialize the configuration
+    init_configuration()
+    verify_configuration()
+    update_configuration()
+    draw_configuration()
+    pygame.time.wait(1000)
+
+    # visualization options
+    draw_moves = True
+    draw_rotations = True
+
+    while True:
+        # key handling
+        for event in pygame.event.get():
+            if (event.type == QUIT or
+                    (event.type == KEYDOWN and event.key == K_q)):
+                pygame.quit()
+                exit()
+
+        step_configuration()
+        if not rotating_cubes:
+            # update_configuration is actually what hangs the program
+            # but we can't draw until we finish it.
+            update_configuration()
+            if draw_moves:
+                draw_configuration(frozen=False)
+                pygame.display.flip()
+                pygame.time.wait(1000)
+        else:
+            if draw_rotations:
+                draw_configuration(frozen=True)
+                pygame.time.wait(50)
 
 if __name__ == '__main__': main()
 
