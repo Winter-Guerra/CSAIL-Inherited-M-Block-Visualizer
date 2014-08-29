@@ -2,8 +2,11 @@ SURFWork2014
 ============
 
 James Bern (jamesmbern@gmail.com)
+
 SURF 2014 at MIT CSAIL DRL
+
 Designing Planners for M-Blocks
+
 Visualizer and planning work
 
   * visualizer.py (2D reconfiguration)
