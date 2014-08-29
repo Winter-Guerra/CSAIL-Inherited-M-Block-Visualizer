@@ -25,7 +25,7 @@ running_cubes = set() # set of cubes currently being run across the outer bdry.
 first_find = None
 next_cube = None      # the next cube to add to running_cubes
 next_P4 = None        # the next instance of P4 to add to running_cubes
-BUFF = 5
+BUFF = 2
 buff_timer = BUFF     # how long to wait upon conclusion of next_cube
                       # # or next_P4 addition before adding next cube
 
@@ -41,8 +41,38 @@ split_counter = None
 
 # flags
 light_variant = False
+# w/ imagemagick: convert -delay 2 frame*.png -reverse name.gif
 dump_png = False
 
+occ_dict = {}
+
+
+# Helper functions for basic vector operations on tuples
+def add_t(a, b):
+    '''
+    a + b componentwise
+    '''
+    assert type(a) is tuple
+    assert type(b) is tuple
+    return tuple(a_i + b_i for (a_i, b_i) in zip(a,b))
+
+def sub_t(a, b):
+    '''
+    a - b componentwise
+    '''
+    assert type(a) is tuple
+    assert type(b) is tuple
+    return tuple(a_i - b_i for (a_i, b_i) in zip(a,b))
+
+def sca_t(a, c):
+    '''
+    c*a
+    '''
+    assert type(a) is tuple
+    return tuple(c*a_i for a_i in a)
+
+
+#
 def init_pygame():
     global screen
     global clock
@@ -50,8 +80,8 @@ def init_pygame():
     os.environ['SDL_VIDEO_WINDOW_POS'] = "{},{}".format(25,25)
     pygame.init()
     pygame.display.set_caption("visualizer2D.py")
-    # screen = pygame.display.set_mode([135*2,25*2])
-    screen = pygame.display.set_mode([140*8,50*4])
+    screen = pygame.display.set_mode([235*2,85*2])
+    # screen = pygame.display.set_mode([140*8,50*4])
     clock = pygame.time.Clock()
 
 
@@ -66,38 +96,45 @@ def verify_configuration():
     global config
     raise NotImplementedError
 
-    # # connectivity condition
-    # for c1 in config: break
-    # comp_c1 = find_component(c1)
-    # for c2 in config:
-        # assert c2 in comp_c1
+    # connectivity condition
+    for c1 in config: break
+    comp_c1 = find_component(c1)
+    for c2 in config:
+        assert c2 in comp_c1
 
-    # # (1), (2), (3)
-    # for c0 in config:
+    # (1), (2), (3)
+    # (A), (B), (B)
+    for c0 in config:
         # x, y = c0
-        # U = (0,1); D = (0,-1); R = (1,0); L = (-1,0);
-        # LR = (L,R); UD = (U,D);
-        # search_dict = {U:LR, D:LR, R:UD, L:UD}
-        # for (major, minors) in search_dict.iteritems():
-                # for minor in minors:
-                    # (M, m) = (major, minor)
-                    # # # derived cubes
-                    # # c5 c4 c3
-                    # # c0 c1 c2
-                    # c1 = (x+M[0],y+M[1])
-                    # c2 = (x+2*M[0],y+2*M[1])
-                    # c3 = (x+2*M[0]+m[0],y+2*M[1]+m[1])
-                    # c4 = (x+M[0]+m[0],y+M[1]+m[1])
-                    # c5 = (x+m[0],y+m[1])
-                    # # (1)
-                    # assert not (c1 not in config and c2 in config)
-                    # # (2)
-                    # assert (not (c1 not in config and c4 in config and
-                        # c5 not in config))
-                    # # (3)
-                    # assert (not (c1 not in config and c2 not in config
-                        # and c3 in config and c4 not in config and
-                        # c5 not in config))
+        U = (0,1); D = (0,-1); R = (1,0); L = (-1,0);
+        LR = (L,R); UD = (U,D);
+        search_dict = {U:LR, D:LR, R:UD, L:UD}
+        for (major, minors) in search_dict.iteritems():
+                for minor in minors:
+                    (M, m) = (major, minor)
+                    # # derived cubes
+                    #
+                    # ^
+                    # |
+                    # m
+                    #
+                    # cf ce cd cc
+                    # c5 c4 c3 cb
+                    # c0 c1 c2 ca  M->
+                    c1 = (x+M[0],y+M[1]) #add_t(c0, M)
+                    c2 = (x+2*M[0],y+2*M[1])
+                    c3 = (x+2*M[0]+m[0],y+2*M[1]+m[1])
+                    c4 = (x+M[0]+m[0],y+M[1]+m[1])
+                    c5 = (x+m[0],y+m[1])
+                    # (1)
+                    assert not (c1 not in config and c2 in config)
+                    # (2)
+                    assert (not (c1 not in config and c4 in config and
+                        c5 not in config))
+                    # (3)
+                    assert (not (c1 not in config and c2 not in config
+                        and c3 in config and c4 not in config and
+                        c5 not in config))
 
     # print("\nConfig verified!\n")
 
@@ -133,44 +170,58 @@ def rotate_clockwise(cube, virtual=False):
     # NOTE: virtual=True turns off the assert statements
     global config
 
-    (x, y) = cube
+    c0 = cube
     c1_c3_wrapped_coords = [((+1,0),(0,+1)),
                             ((0,+1),(-1,0)),
                             ((-1,0),(0,-1)),
                             ((0,-1),(+1,0))]
-    for (c1, c3) in c1_c3_wrapped_coords:
+    for (i, j) in c1_c3_wrapped_coords:
         # # derived cubes
+        #    ^
+        #    |
+        #    j
+        #
         #    c6 c7
         # c4 c3 c2
-        # c5 c0 c1
-        c2 = (c1[0]+c3[0], c1[1]+c3[1])
-        c6 = (2*c3[0], 2*c3[1])
-        c7 = (c1[0]+2*c3[0], c1[1]+2*c3[1])
-        c5 = (-c1[0], -c1[1])
-        c4 = (c3[0]-c1[0], c3[1]-c1[1])
+        # c5 c0 c1  i ->
+        d1 = i
+        d3 = j
+        d2 = add_t(i, j)            #(c1[0]+c3[0], c1[1]+c3[1])
+        d6 = sca_t(j, 2)             #(2*c3[0], 2*c3[1])
+        d7 = add_t(i, sca_t(j, 2))  #(c1[0]+2*c3[0], c1[1]+2*c3[1])
+        d5 = sca_t(i, -1)            #(-c1[0], -c1[1])
+        d4 = add_t(j, sca_t(i, -1)) #(c3[0]-c1[0], c3[1]-c1[1])
 
         # inelegant translate
-        c1,c2,c3,c4,c5,c6,c7 = map(lambda c: (c[0]+x, c[1]+y),
-                (c1,c2,c3,c4,c5,c6,c7))
+        c1,c2,c3,c4,c5,c6,c7 = map(lambda di: (add_t(c0, di)),
+                (d1,d2,d3,d4,d5,d6,d7))
 
         if virtual:
             assert cube not in config
 
-        # Assuming c1 in config
+        # # We use c1 as our pivot (fine since such a pivot must exist), so
+        # (assumption) => c1 in config
         if c1 not in config:
             continue
-        # assert c5 not in config
+        # (assumption) => c3 not in config
         if c3 in config:
             continue
+        # => c5 not in config
+        assert c5 not in config
 
+        # Transfer Move
         if c4 in config:
             if not virtual:
                 assert c6 not in config and c7 not in config
             return c5
+
+        # Linear Move
         elif c2 in config:
             if not virtual:
                 assert c4 not in config and c5 not in config
             return c3
+
+        # Corner Move
         else:
             # print map(lambda(x): x in config, (c1,c2,c3,c4,c5,c6,c7))
             # print ("c1: {}, c3: {}".format(c1, c3))
@@ -180,7 +231,7 @@ def rotate_clockwise(cube, virtual=False):
                         c6 not in config and c7 not in config)
             return c2
 
-    raise IOError
+    exit("Error: No valid move found!")
 
 
 def find_neighbors(cube):
@@ -446,7 +497,9 @@ def step_configuration():
                 # calculate split_checkpoint
                 m1 = next_P4[0]
                 shell = m1
-                for _ in xrange(BUFF):
+                # TODO: cases, formalize
+                # FORNOW: very loose bound
+                for _ in xrange(BUFF+3):
                     shell = rotate_clockwise(shell)
                 split_checkpoint = shell
 
@@ -490,12 +543,157 @@ def step_configuration():
 
     # FORNOW bookkeep next_P4
     if split_mode:
-        for i in range(split_counter+1):
-            next_P4[i] = rotate_clockwise(next_P4[i])
+        for i in range(split_counter + 1):
+            if not (next_P4[i][1] == extreme[1] and next_P4[i][0] > extreme[0]):
+                next_P4[i] = rotate_clockwise(next_P4[i])
+
+
+def occ_dict_add(cell, d_tup=None, full=None):
+    ''' Call this function: does adding and checking '''
+
+    global occ_dict
+
+    # # # perform checks
+
+    if cell in occ_dict:
+        assert occ_dict[cell] != "FULL"
+
+    # # full cell analysis
+    if full:
+        assert d_tup == None
+        assert cell not in occ_dict
+        occ_dict[cell] = "FULL"
+        return
+
+    # # circle sector analysis
+    assert d_tup != None
+
+    # collision detection
+    if cell in occ_dict:
+        for e_tup in occ_dict[cell]:
+            # same edge
+            assert e_tup[0] != d_tup[0]
+            # perpendicular edges (one vert one horz)
+            if abs(d_tup[0][0]) + abs(e_tup[0][0]) == 1:
+                # NOTE: must both be pointing away from shared vertex
+                # TODO: picture explaining this,
+                # it's subtle.
+                assert sum(e_tup[1]) == sum(d_tup[0])
+                assert sum(e_tup[0]) == sum(d_tup[1])
+            # NOTE: parallel disjoint edges never a problem
+
+    # actually perform addition
+    if cell not in occ_dict:
+        occ_dict[cell] = [d_tup]
+    else:
+        occ_dict[cell].append(d_tup)
+
+
+def detect_collisions():
+    '''
+    Run collision detection of all cubes in running_cubes.
+    '''
+    global config
+    global occ_dict
+
+    # dictionary detailing which cells will be occupied (and how)
+    # during the next lockstep rotation
+    occ_dict = {}
+
+    # d_tuple (direction_tuple) =
+    # (broken edge as vector, vector pointing from less to more occupied sides)
+    #      1 2    1 2
+    # e.g. a x -> x a  (a rotating over blocks marked 0.)
+    #      0 0    0 0
+    # 1 = (U=(0,1), R=(1,0)) (swoop goes up to the right)
+    # 2 = (U=(0,1), L=(-1,0)) (swoop goes up to the left)
+
+
+    # calls to occ_dict_add
+    for cube in running_cubes:
+
+        # add in intermediate occ's
+        # # FORNOW: hacked out of rotate_clockwise code
+        #
+        c0 = cube
+        occ_dict_add(c0, full=True)
+
+        c1_c3_wrapped_coords = [((+1,0),(0,+1)),
+                                ((0,+1),(-1,0)),
+                                ((-1,0),(0,-1)),
+                                ((0,-1),(+1,0))]
+        for (i, j) in c1_c3_wrapped_coords:
+            # # derived cubes
+            #    ^
+            #    |
+            #    j
+            #
+            #    c6 c7
+            # c4 c3 c2
+            # c5 c0 c1  i ->
+            # ca cb 
+            d1 = i
+            d3 = j
+            d2 = add_t(i, j)            #(c1[0]+c3[0], c1[1]+c3[1])
+            d6 = sca_t(j, 2)             #(2*c3[0], 2*c3[1])
+            d7 = add_t(i, sca_t(j, 2))  #(c1[0]+2*c3[0], c1[1]+2*c3[1])
+            d5 = sca_t(i, -1)            #(-c1[0], -c1[1])
+            d4 = add_t(j, sca_t(i, -1)) #(c3[0]-c1[0], c3[1]-c1[1])
+            da = add_t(sca_t(i, -1), sca_t(j, -1))
+            db = sca_t(j, -1)
+
+            # inelegant translate
+            c1,c2,c3,c4,c5,c6,c7 = map(lambda di: (add_t(c0, di)),
+                    (d1,d2,d3,d4,d5,d6,d7))
+            ca,cb = map(lambda di: (add_t(c0, di)), (da,db))
+
+            if c1 not in config: continue
+            if c3 in config: continue
+            assert c5 not in config
+
+            # Transfer Move c0 -> c5
+            if c4 in config:
+                assert c6 not in config and c7 not in config
+                # # j face
+                # -i bias
+                occ_dict_add(cb, d_tup=(j, sca_t(i, -1)))
+                # +i bias
+                occ_dict_add(ca, d_tup=(j, i))
+
+                occ_dict_add(c5, full=True)
+                break
+
+            # Linear Move c0 -> c3
+            elif c2 in config:
+                assert c4 not in config and c5 not in config
+                # # -i face
+                # +j bias
+                occ_dict_add(c5, d_tup=(sca_t(i, -1), j))
+                # -j bias
+                occ_dict_add(c4, d_tup=(sca_t(i, -1), sca_t(j, -1)))
+
+                occ_dict_add(c3, full=True)
+                break
+
+            # Corner Move c0 -> c2
+            else:
+                assert (c4 not in config and c5 not in config and
+                        c6 not in config and c7 not in config)
+                # copied from Linear Move
+                occ_dict_add(c5, d_tup=(sca_t(i, -1), j))
+                occ_dict_add(c4, d_tup=(sca_t(i, -1), sca_t(j, -1)))
+                # # -j face
+                # +i bias
+                occ_dict_add(c6, d_tup=(sca_t(j, -1), i))
+                # -i bias
+                occ_dict_add(c7, d_tup=(sca_t(j, -1), sca_t(i, -1)))
+
+                occ_dict_add(c2, full=True)
+                break
 
 
 def draw_cube(cube, color):
-    c = 8
+    c = 4
     N = 1
     (x, y) = (cube[0]+N, cube[1]+N)
     pygame.draw.rect(screen, color, [x*c, screen.get_size()[1]-c-y*c, c, c])
@@ -588,7 +786,13 @@ def main():
     draw_moves = True
     draw_rotations = True
 
-    frame_i = 0
+    # ghetto padding for powerpoint
+    frame_i = -1
+    # for _ in xrange(200):
+        # frame_i += 1
+        # pad = '0'*(4-len(str(frame_i)))
+        # pygame.image.save(pygame.display.get_surface(), 'frame' + pad + str(frame_i) + '.png')
+
     while True:
         # FORNOW: frame_i only used by dump_png
         frame_i += 1
@@ -600,9 +804,9 @@ def main():
                 exit()
 
         step_configuration()
-        pygame.time.wait(100)
+        pygame.time.wait(50)
         # FORNOW
-        if not split_mode:
+        if not split_mode and buff_timer == 0:
             classify_configuration()
 
         if draw_moves:
@@ -612,9 +816,13 @@ def main():
         else:
             if draw_rotations:
                 draw_configuration(frozen=True)
+
+        detect_collisions()
+
         if dump_png:
             pad = '0'*(4-len(str(frame_i)))
             pygame.image.save(pygame.display.get_surface(), 'frame' + pad + str(frame_i) + '.png')
+        print frame_i,
 
 
 
