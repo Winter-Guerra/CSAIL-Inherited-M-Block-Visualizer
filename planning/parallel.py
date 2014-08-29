@@ -25,7 +25,7 @@ running_cubes = set() # set of cubes currently being run across the outer bdry.
 first_find = None
 next_cube = None      # the next cube to add to running_cubes
 next_P4 = None        # the next instance of P4 to add to running_cubes
-BUFF = 2
+BUFF = 3
 buff_timer = BUFF     # how long to wait upon conclusion of next_cube
                       # # or next_P4 addition before adding next cube
 
@@ -80,7 +80,7 @@ def init_pygame():
     os.environ['SDL_VIDEO_WINDOW_POS'] = "{},{}".format(25,25)
     pygame.init()
     pygame.display.set_caption("visualizer2D.py")
-    screen = pygame.display.set_mode([235*2,85*2])
+    screen = pygame.display.set_mode([235*4,85*4])
     # screen = pygame.display.set_mode([140*8,50*4])
     clock = pygame.time.Clock()
 
@@ -571,15 +571,17 @@ def occ_dict_add(cell, d_tup=None, full=None):
     # collision detection
     if cell in occ_dict:
         for e_tup in occ_dict[cell]:
+            print cell
+            print e_tup
+            print d_tup
             # same edge
             assert e_tup[0] != d_tup[0]
             # perpendicular edges (one vert one horz)
             if abs(d_tup[0][0]) + abs(e_tup[0][0]) == 1:
                 # NOTE: must both be pointing away from shared vertex
-                # TODO: picture explaining this,
-                # it's subtle.
-                assert sum(e_tup[1]) == sum(d_tup[0])
-                assert sum(e_tup[0]) == sum(d_tup[1])
+                # (pretty subtle)
+                assert sum(e_tup[1]) != sum(d_tup[0])
+                assert sum(e_tup[0]) != sum(d_tup[1])
             # NOTE: parallel disjoint edges never a problem
 
     # actually perform addition
@@ -666,11 +668,11 @@ def detect_collisions():
             # Linear Move c0 -> c3
             elif c2 in config:
                 assert c4 not in config and c5 not in config
-                # # -i face
+                # # +i face
                 # +j bias
-                occ_dict_add(c5, d_tup=(sca_t(i, -1), j))
+                occ_dict_add(c5, d_tup=(i, j))
                 # -j bias
-                occ_dict_add(c4, d_tup=(sca_t(i, -1), sca_t(j, -1)))
+                occ_dict_add(c4, d_tup=(i, sca_t(j, -1)))
 
                 occ_dict_add(c3, full=True)
                 break
@@ -680,8 +682,8 @@ def detect_collisions():
                 assert (c4 not in config and c5 not in config and
                         c6 not in config and c7 not in config)
                 # copied from Linear Move
-                occ_dict_add(c5, d_tup=(sca_t(i, -1), j))
-                occ_dict_add(c4, d_tup=(sca_t(i, -1), sca_t(j, -1)))
+                occ_dict_add(c5, d_tup=(i, j))
+                occ_dict_add(c4, d_tup=(i, sca_t(j, -1)))
                 # # -j face
                 # +i bias
                 occ_dict_add(c6, d_tup=(sca_t(j, -1), i))
@@ -693,7 +695,7 @@ def detect_collisions():
 
 
 def draw_cube(cube, color):
-    c = 4
+    c = 8
     N = 1
     (x, y) = (cube[0]+N, cube[1]+N)
     pygame.draw.rect(screen, color, [x*c, screen.get_size()[1]-c-y*c, c, c])
@@ -817,7 +819,21 @@ def main():
             if draw_rotations:
                 draw_configuration(frozen=True)
 
-        detect_collisions()
+        try:
+            detect_collisions()
+        except AssertionError, e:
+            print "running_cubes collide!"
+            print e
+            while True:
+                # FORNOW: frame_i only used by dump_png
+                frame_i += 1
+                # key handling
+                for event in pygame.event.get():
+                    if (event.type == QUIT or
+                            (event.type == KEYDOWN and event.key == K_q)):
+                        pygame.quit()
+                        raise
+                        exit()
 
         if dump_png:
             pad = '0'*(4-len(str(frame_i)))
